@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+ <meta charset="utf-8">
+ <meta http-equiv="cache-control" content="no-cache">
+ <meta http-equiv="pragma" content="no-cache"> 
+ <meta http-equiv="expires" content="0">
+ <meta http-equiv="X-UA-Compatible" content="IE=10" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>websocket</title>
+</head>
+
+<script src="https://code.jquery.com/jquery-2.2.4.js" integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI=" crossorigin="anonymous"></script>		
+<style type="text/css">
+  #console-container {
+    border: 1px solid #CCCCCC; overflow-y: scroll;
+	height : 250px; width: 60%;
+	padding: 13px; border-radius: 3px;
+	display:inline-block;
+  }
+  .myMsg{
+	width: 100%;	text-align: left;
+	height: 35px;	padding: 3px;
+	color: gray;
+  }
+  .friendsMsg{
+	width: 100%;	text-align: right; 	height: 35px;
+	padding: 3px;	color: black;
+  }
+  #users{
+    border: 1px solid #CCCCCC;
+    overflow-y: scroll;	height : 250px;	width: 30%;
+	padding: 13px;	border-radius: 3px;	display:inline-block;
+  }
+  .members{
+	width:100%;	padding: 5px;
+  }
+</style>
+
+
+
+<body>
+
+
+<!-- 채팅값이 들어가는 테그 -->
+<div id="console-container" >
+
+</div>
+<div id='users' > </div>
+
+<!-- 인풋 박스 -->
+<p>
+<div>
+  <input type="text" placeholder="type and press enter to chat" id="chat" >
+  <input type="button" value='send' id="clicker">
+</div><br><br>
+</body>
+</html>
+
+<script type="application/javascript">
+var user = 'admin6';   //사용자id, id는 당연히 고유값으로 부여해야 한다.
+var room = '1';  //방번호, 해당번호가 틀리면 채팅메시지를 받을 수 없다.
+var url = 'ws://127.0.0.1:3000?user='+user+'&room='+room;
+var socket = new WebSocket(url);
+
+socket.onopen =function () {
+	console.log('connection ok');
+};
+socket.onclose =function () {
+	console.log('connection fail');
+};
+socket.onmessage = function (response) {
+	var msg = JSON.parse(response.data);
+	makeMsg(msg);
+};
+
+$('#chat').keydown(function(event){
+	if(event.keyCode == 13){
+		var value = $(this).val();
+		socket.send(value);
+	}
+});
+
+$('#clicker').click(function(){
+	var value = $('#chat').val();
+	socket.send(value);
+});
+
+var stop = true;
+//들어온 메시지 그리기 함수
+function makeMsg(msg){
+	console.log(msg);
+	if(msg.type == 'beforList' && stop){//나보다 먼저 들어온 사용자
+		msg.users.forEach(function(beforUsr){
+			var usr = $('<div/>').attr({id:beforUsr,class:'members'}).text(beforUsr);
+			$('#users').append(usr);
+		});
+		stop = false;
+	} else{
+		if(msg.type == 'welcome'){  //등록
+			var usr = $('<div/>').attr({id:msg.fromUser,class:'members'}).text(msg.fromUser);
+			$('#users').append(usr);
+		} else if(msg.type == 'bye'){  //나감
+			$('#'+msg.fromUser).remove();
+		}
+		var cls= 'friendsMsg';
+		if(msg.fromUser == user){
+			cls= 'myMsg';
+		}
+		var child = $('<div/>').attr('class',cls).append(
+			$('<span/>').text(msg.fromUser),
+			$('<small/>').text(' ('+yymmhhddss()+ ') '),
+			$('<span/>').text(' : '+msg.param)
+		);
+		$('#console-container').append(child);
+		$('#console-container').animate({
+			scrollTop: $('#console-container').get(0).scrollHeight
+		}, 10);
+	}
+}
+
+//시간 그리기 함수
+function yymmhhddss(){
+    var time = new Date();
+    var year = time.getFullYear();
+    var month = time.getMonth()+1;
+    var day = time.getDay();
+    var hhmmss = ("0" + time.getHours()).slice(-2) + ":" + ("0" + time.getMinutes()).slice(-2) + ":" + ("0" + time.getSeconds()).slice(-2);    
+    if(month < 10){
+        month = '0'+month;
+    }
+    if(day < 10){
+        day = '0'+day;
+    }    
+    param = year + '-' + month + '-' + day + ' ' + hhmmss;
+    return param;
+}
+</script>
