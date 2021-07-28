@@ -22,7 +22,8 @@ const requestType = {  //메시지 타입
     D:'beforList'
 }
 
-wsServer.on('request', function(request) {
+wsServer.on('request', function (request) {
+    console.log(request);
     const user = request.resourceURL.query.user;  //사용자 ID
     const room = request.resourceURL.query.room;  //방번호
     if( NUL(user) || NUL(room)){
@@ -35,7 +36,7 @@ wsServer.on('request', function(request) {
     rooms.set(user,{user:user, room:room, con:connection});  //방 목록에 자신 추가
     msgSender(rooms.get(user), null, requestType.A);  //로그인 타입으로 메시지 전송
 
-    connection.on('message', function(message) {  //채팅메시지가 도달하면
+    connection.on('message', function (message) {  //채팅메시지가 도달하면
         msgSender(rooms.get(user), message, requestType.B);
     });
 
